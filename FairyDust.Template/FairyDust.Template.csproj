@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>FairyDust.Template</AssemblyName>
+    <RootNamespace>FairyDust.Template</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(MelonLoaderNet6Dir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.HarmonySupport">
+      <HintPath>$(MelonLoaderNet6Dir)\Il2CppInterop.HarmonySupport.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(MelonLoaderNet6Dir)\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MelonLoader">
+      <HintPath>$(MelonLoaderNet6Dir)\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(Il2CppAssembliesDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppForsakenFrontiers">
+      <HintPath>$(Il2CppAssembliesDir)\Il2CppForsaken Frontiers.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(Il2CppAssembliesDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateLocalReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(MelonLoaderNet6Dir)\MelonLoader.dll')" Text="MelonLoader.dll was not found. Check MelonLoaderNet6Dir or create Local.Build.props." />
+    <Error Condition="!Exists('$(Il2CppAssembliesDir)\Assembly-CSharp.dll')" Text="Assembly-CSharp.dll was not found in Il2CppAssemblies. Run Forsaken Frontiers through MelonLoader once, then rebuild." />
+  </Target>
+
+  <Target Name="CopyToGameModsFolder" AfterTargets="Build">
+    <PropertyGroup>
+      <ModsDirectory>$(GameRootDir)\Mods</ModsDirectory>
+      <BuiltModPath>$(TargetDir)$(TargetFileName)</BuiltModPath>
+      <DeployedModPath>$(ModsDirectory)\$(TargetFileName)</DeployedModPath>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(ModsDirectory)" />
+    <Copy SourceFiles="$(BuiltModPath)" DestinationFiles="$(DeployedModPath)" SkipUnchangedFiles="true" />
+    <Message Text="Copied $(TargetFileName) to $(DeployedModPath)" Importance="high" />
+  </Target>
+</Project>

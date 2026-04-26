@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Copy this file to Local.Build.props when you need machine-specific overrides.
+      Local.Build.props is git-ignored by default.
+    -->
+
+    <!-- <GameRootDir>D:\Games\Forsaken Frontiers</GameRootDir> -->
+    <!-- <MelonLoaderNet6Dir>$(GameRootDir)\MelonLoader\net6</MelonLoaderNet6Dir> -->
+    <!-- <Il2CppAssembliesDir>$(GameRootDir)\MelonLoader\Il2CppAssemblies</Il2CppAssembliesDir> -->
+    <!-- <UserDataDir>$(GameRootDir)\UserData</UserDataDir> -->
+  </PropertyGroup>
+</Project>

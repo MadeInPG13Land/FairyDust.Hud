@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <PlatformTarget>x64</PlatformTarget>
+
+    <GameRootDir Condition="'$(GameRootDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Forsaken Frontiers</GameRootDir>
+    <MelonLoaderNet6Dir Condition="'$(MelonLoaderNet6Dir)' == ''">$(GameRootDir)\MelonLoader\net6</MelonLoaderNet6Dir>
+    <Il2CppAssembliesDir Condition="'$(Il2CppAssembliesDir)' == ''">$(GameRootDir)\MelonLoader\Il2CppAssemblies</Il2CppAssembliesDir>
+    <UserDataDir Condition="'$(UserDataDir)' == ''">$(GameRootDir)\UserData</UserDataDir>
+  </PropertyGroup>
+
+  <Import Project="Local.Build.props" Condition="Exists('Local.Build.props')" />
+</Project>
