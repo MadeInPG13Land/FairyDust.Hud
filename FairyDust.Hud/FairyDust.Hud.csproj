@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>FairyDust.Hud</AssemblyName>
+    <RootNamespace>FairyDust.Hud</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(MelonLoaderNet6Dir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.HarmonySupport">
+      <HintPath>$(MelonLoaderNet6Dir)\Il2CppInterop.HarmonySupport.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(MelonLoaderNet6Dir)\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MelonLoader">
+      <HintPath>$(MelonLoaderNet6Dir)\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(Il2CppAssembliesDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppFishNet.Runtime">
+      <HintPath>$(Il2CppAssembliesDir)\Il2CppFishNet.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(Il2CppAssembliesDir)\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2Cppfairyengine">
+      <HintPath>$(Il2CppAssembliesDir)\Il2Cppfairyengine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppForsakenFrontiers">
+      <HintPath>$(Il2CppAssembliesDir)\Il2CppForsaken Frontiers.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(Il2CppAssembliesDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(Il2CppAssembliesDir)\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(Il2CppAssembliesDir)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(Il2CppAssembliesDir)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(Il2CppAssembliesDir)\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(Il2CppAssembliesDir)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(Il2CppAssembliesDir)\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateLocalReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(MelonLoaderNet6Dir)\MelonLoader.dll')" Text="MelonLoader.dll was not found. Check MelonLoaderNet6Dir or create Local.Build.props." />
+    <Error Condition="!Exists('$(Il2CppAssembliesDir)\Assembly-CSharp.dll')" Text="Assembly-CSharp.dll was not found in Il2CppAssemblies. Run Forsaken Frontiers through MelonLoader once, then rebuild." />
+  </Target>
+
+  <!-- Copy mod DLL into the game’s Mods folder on every `dotnet build` (runs after Build so incremental builds still deploy). -->
+  <Target Name="CopyToGameModsFolder" AfterTargets="Build">
+    <PropertyGroup>
+      <_GameRoot>$(GameRootDir)</_GameRoot>
+      <_GameRoot Condition="'$(_GameRoot)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Forsaken Frontiers</_GameRoot>
+      <ModsDirectory>$(_GameRoot)\Mods</ModsDirectory>
+      <DeployedModPath>$(ModsDirectory)\$(TargetFileName)</DeployedModPath>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(TargetPath)')" Text="FairyDust.Hud: build output not found: $(TargetPath). Run a full build." />
+    <MakeDir Directories="$(ModsDirectory)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(DeployedModPath)" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="false" />
+    <Message Text="FairyDust.Hud deploy: $(TargetPath) -&gt; $(DeployedModPath) [GameRootDir=$(_GameRoot)]" Importance="high" />
+  </Target>
+</Project>

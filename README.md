@@ -1,51 +1,41 @@
-# FairyDust.Template
+# FairyDust.Hud
 
-Minimal Forsaken Frontiers IL2CPP MelonLoader template.
+MelonLoader mod for **Forsaken Frontiers** (IL2CPP): gameplay HUD (stamina row first; more widgets later).
+
+Repo folder may still be named `FairyDust.Stamina` on disk; the solution and assembly are **FairyDust.Hud**.
 
 ## Layout
 
-- `FairyDust.Template/` contains the mod project.
-- `FairyDust.Template/Configuration/` contains the MelonLoader-backed config and environment bootstrap.
+- `FairyDust.Hud/` — mod project
+- `FairyDust.Hud/Configuration/` — MelonPreferences config and `HudEnvironment` paths
+- `FairyDust.Hud/Modules/Hud/` — shared HUD shell (`GameplayHudHost`, dock layout, `IHudModule`, `WorldSceneGate`, `FairyLocalPlayer`)
+- `FairyDust.Hud/Modules/Stamina/` — stamina panel + module
+- `FairyDust.Hud/Modules/BleedOut/` — bleed-out placeholder module
+- `FairyDust.Hud/Modules/Infection/` — infection placeholder module
 
-## Startup Shape
+Registration order in `Main` is bottom → top on screen (first module sits nearest the bottom margin).
 
-- `Main.cs` is the MelonLoader entrypoint and startup bootstrap.
-- `Config.cs` holds the typed MelonLoader-backed config object and save flow.
-- `FairyDustEnvironment.cs` centralizes runtime paths.
+## Entry and config
 
-## Configuration
+- `Main.cs` — MelonLoader bootstrap
+- `Config.cs` / `ModConfiguration.cs` — **player-facing toggles only** (mod on/off, per-module on/off). File: `UserData/FairyDust.Hud.cfg`
+- `Modules/Hud/HudDockLayout.cs`, `Modules/Hud/DeckStylePanelChrome.cs` — shared DataDeck-style panel chrome + layout metrics (not preferences)
 
-This template uses MelonLoader's built-in preferences system through a typed config wrapper.
-`Config.Initialize()` loads `Config.Values` from `UserData/FairyDust.Template.cfg`, and `Config.Save()` persists changes back to that file.
+## Local build
 
-## Environment
+Default game root: `C:\Program Files (x86)\Steam\steamapps\common\Forsaken Frontiers`
 
-`FairyDustEnvironment` centralizes the template's common runtime paths in the same spirit as MelonLoader's `MelonEnvironment`, so code can read stable properties instead of rebuilding paths ad hoc.
-
-## Local Setup
-
-Default game path:
-
-`C:\Program Files (x86)\Steam\steamapps\common\Forsaken Frontiers`
-
-Override local paths with `Local.Build.props` if needed.
-
-## MelonLoader Attributes
-
-The template currently includes:
-
-- `MelonInfo`
-- `MelonColor(255, 244, 155, 171)`
-- `MelonAuthorColor(255, 155, 126, 189)`
-- `MelonGame("made in fairyland", "Forsaken Frontiers")`
-- `MelonProcess("Forsaken Frontiers.exe")`
-- `MelonPlatformDomain(MelonPlatformDomainAttribute.CompatibleDomains.IL2CPP)`
-
-The IL2CPP domain attribute makes the template's intended runtime target explicit alongside normal game and process matching.
-
-## Commands
+Override with `Local.Build.props` (copy from `Local.Build.props.example`).
 
 ```powershell
-dotnet build
-dotnet format
+dotnet build FairyDust.Hud.sln
+dotnet format FairyDust.Hud.sln
 ```
+
+Successful build copies `FairyDust.Hud.dll` to the game `Mods` folder. Remove any old `FairyDust.Stamina.dll` so MelonLoader does not load both.
+
+## MelonLoader
+
+- `MelonGame("made in fairyland", "Forsaken Frontiers")`
+- `MelonProcess("Forsaken Frontiers.exe")`
+- `MelonPlatformDomain(IL2CPP)`

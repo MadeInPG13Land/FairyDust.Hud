@@ -1,8 +1,6 @@
-using System;
-using System.IO;
 using MelonLoader;
 
-namespace FairyDust.Template.Configuration;
+namespace FairyDust.Hud.Configuration;
 
 public static class Config
 {
@@ -14,9 +12,9 @@ public static class Config
 
     public static void Initialize()
     {
-        FairyDustEnvironment.EnsureUserDataDirectory();
+        HudEnvironment.EnsureUserDataDirectory();
 
-        FilePath = FairyDustEnvironment.ConfigFilePath;
+        FilePath = HudEnvironment.ConfigFilePath;
 
         category = MelonPreferences.CreateCategory<ModConfiguration>(Metadata.Name);
         category.SetFilePath(FilePath, printmsg: false);
