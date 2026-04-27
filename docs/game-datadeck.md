@@ -23,7 +23,7 @@ So Data Deck UI is **world-space uGUI** rendered by a **child camera** under the
 
 The visible scanlines, chromatic fringing, vignette, and TV-style artifacts are **not** the Unity UI canvas shader alone. The game ships **RetroLook Pro**–style effects as **`RLPro*`** types (namespace **`Il2Cpp`**, **Post Process Stack v2** / `PostProcessEffectSettings`).
 
-**`FFPlayer`** holds direct references to several effect **settings** instances (names from a real `FairyDust.Stamina.DataDeckPostProcess.log`):
+**`FFPlayer`** holds direct references to several effect **settings** instances (names from prior runtime research):
 
 | Field | Type (Il2Cpp) |
 |-------|----------------|

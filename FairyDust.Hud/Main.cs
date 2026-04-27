@@ -1,79 +1,50 @@
-using System.IO;
 using FairyDust.Hud.Configuration;
-using FairyDust.Hud.Debug;
-using FairyDust.Hud.Modules.BleedOut;
 using FairyDust.Hud.Modules.Hud;
-using FairyDust.Hud.Modules.Infection;
-using FairyDust.Hud.Modules.Stamina;
+using FairyDust.Hud.Modules.Status;
 using MelonLoader;
-using UnityEngine;
 
 namespace FairyDust.Hud;
 
 public sealed class Main : MelonMod
 {
-    private const string PostLogFileName = "FairyDust.Stamina.DataDeckPostProcess.log";
-    private static int _lastPostLogFrame = -1;
-
+    private static Main activeInstance;
     private GameplayHudHost hudHost;
+    private bool loggedLateUpdateFailure;
 
     public override void OnInitializeMelon()
     {
+        if (activeInstance != null && activeInstance != this)
+        {
+            activeInstance.hudHost?.Shutdown();
+        }
+
+        activeInstance = this;
         Config.Initialize();
 
         hudHost = new GameplayHudHost(this);
-        hudHost.Register(new StaminaHudModule());
-        hudHost.Register(new BleedOutHudModule());
-        hudHost.Register(new InfectionHudModule());
+        hudHost.Register(new StatusHudModule());
         hudHost.Initialize();
 
-        LoggerInstance.Msg($"{Metadata.Name} v{Metadata.Version} — {Config.FilePath}");
-        string postLog = Path.Combine(HudEnvironment.UserDataDirectory, PostLogFileName);
-        ModLogPaths.WriteStartupProbe();
-        LoggerInstance.Msg("Dev: F10 / Ctrl+Shift+D appends " + postLog);
-    }
-
-    public override void OnUpdate()
-    {
-        if (UnityEngine.Input.GetKeyDown(KeyCode.F10))
-        {
-            if (Time.frameCount == _lastPostLogFrame)
-            {
-                return;
-            }
-
-            _lastPostLogFrame = Time.frameCount;
-            DataDeckPostProcessLog.TryDump();
-        }
-
-    }
-
-    /// <summary>Catch chord when legacy <see cref="Input" /> is disabled (new Input System).</summary>
-    public override void OnGUI()
-    {
-        Event e = Event.current;
-        if (e == null || e.type != EventType.KeyDown)
-        {
-            return;
-        }
-
-        if (e.control && e.shift && e.keyCode == KeyCode.D)
-        {
-            if (Time.frameCount == _lastPostLogFrame)
-            {
-                return;
-            }
-
-            _lastPostLogFrame = Time.frameCount;
-            DataDeckPostProcessLog.TryDump();
-            return;
-        }
-
+        LoggerInstance.Msg($"{Metadata.Name} v{Metadata.Version} - {Config.FilePath}");
+        LoggerInstance.Msg("HUD config loaded: " + Config.LoadedValuesSummary);
     }
 
     public override void OnSceneWasLoaded(int buildIndex, string sceneName) =>
         hudHost?.OnSceneWasLoaded(buildIndex, sceneName);
 
-    public override void OnLateUpdate() =>
-        hudHost?.OnLateUpdate();
+    public override void OnLateUpdate()
+    {
+        try
+        {
+            hudHost?.OnLateUpdate();
+        }
+        catch (Exception ex)
+        {
+            if (!loggedLateUpdateFailure)
+            {
+                loggedLateUpdateFailure = true;
+                LoggerInstance.Error("HUD OnLateUpdate failed: " + ex);
+            }
+        }
+    }
 }

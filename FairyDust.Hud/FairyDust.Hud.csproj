@@ -69,6 +69,10 @@
       <HintPath>$(Il2CppAssembliesDir)\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Unity.Postprocessing.Runtime">
+      <HintPath>$(Il2CppAssembliesDir)\Unity.Postprocessing.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <Target Name="ValidateLocalReferences" BeforeTargets="ResolveReferences">

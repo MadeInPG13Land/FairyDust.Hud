@@ -1,55 +1,40 @@
-using Il2Cppmadeinfairyland.forsakenfrontiers;
 using Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.datadeck;
 using Il2Cppmadeinfairyland.forsakenfrontiers.ui;
 using Il2CppTMPro;
+using UnityEngine;
 using UnityEngine.UI;
 
 namespace FairyDust.Hud.Components.Deck;
 
-/// <summary>Attaches <see cref="FFDataDeckUIColorer"/> so HUD quads follow deck / flavor like built-in UI.</summary>
+/// <summary>Applies Data Deck flavor colors without attaching game-owned tint components to DDOL HUD UI.</summary>
 internal static class DeckTint
 {
     public static FFDataDeckUIColorer BindImage(Image image, FFDataDeck deck, bool darken)
     {
-        var c = image.gameObject.AddComponent<FFDataDeckUIColorer>();
-        c._image = image;
-        c.darkenImage = darken;
-        c.AssignDataDeck(deck);
-        c.ListenForFlavorChanges();
-        return c;
+        if (image == null)
+        {
+            return null;
+        }
+
+        Color color = DeckTextStyle.ResolveDeckColor(deck, image.color);
+        image.color = darken ? Darken(color) : color;
+        return null;
     }
 
     public static FFDataDeckUIColorer BindText(TextMeshProUGUI text, FFDataDeck deck, bool darken)
     {
-        var c = text.gameObject.AddComponent<FFDataDeckUIColorer>();
-        c._text = text;
-        c.darkenText = darken;
-        c.AssignDataDeck(deck);
-        c.ListenForFlavorChanges();
-        return c;
+        if (text == null)
+        {
+            return null;
+        }
+
+        Color color = DeckTextStyle.ResolveDeckColor(deck, text.color);
+        text.color = darken ? Darken(color) : color;
+        return null;
     }
 
-    public static void Apply(FFDataDeckUIColorer c, FFGameplayStatics.FlavorData f)
+    private static Color Darken(Color color)
     {
-        if (c == null)
-        {
-            return;
-        }
-
-        c.ApplyColor(f);
-    }
-
-    public static void SyncAll(FFDataDeckUIColorer first, FFDataDeckUIColorer[] rest, FFGameplayStatics.FlavorData f)
-    {
-        Apply(first, f);
-        if (rest == null)
-        {
-            return;
-        }
-
-        for (int i = 0; i < rest.Length; i++)
-        {
-            Apply(rest[i], f);
-        }
+        return new Color(color.r * 0.6f, color.g * 0.6f, color.b * 0.6f, color.a);
     }
 }

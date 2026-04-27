@@ -6,6 +6,9 @@ public sealed class ModConfiguration
     public bool Enabled = true;
 
     public bool StaminaModuleEnabled = true;
-    public bool BleedOutModuleEnabled = false;
-    public bool InfectionModuleEnabled = false;
+    public bool BleedOutModuleEnabled = true;
+    public bool InfectionModuleEnabled = true;
+    public bool FrostbiteModuleEnabled = true;
+
+    public bool HudPostProcessingEnabled = false;
 }
