@@ -1,4 +1,4 @@
-namespace FairyDust.Hud.Modules.Hud;
+namespace FairyDust.Hud.Host;
 
 /// <summary>One logical HUD block (stamina, bleed-out, etc.) with its own UI under an assigned slot.</summary>
 public interface IHudModule

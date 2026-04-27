@@ -3,7 +3,7 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace FairyDust.Hud.Modules.Hud;
+namespace FairyDust.Hud.Host;
 
 /// <summary>Screen Space Overlay shell: bottom-left dock, module slots.</summary>
 internal sealed class GameplayHudHost
@@ -17,12 +17,12 @@ internal sealed class GameplayHudHost
 
     private GameObject hudRig;
     private GameObject canvasRoot;
-    private GameObject renderCanvasRoot;
     private Canvas hudCanvas;
     private CanvasScaler hudCanvasScaler;
     private RectTransform dockRoot;
-    private HudPostProcessRig postProcessRig;
-    private bool postProcessEnabled;
+    private VerticalLayoutGroup dockLayoutGroup;
+    private Vector2 lastDockPosition = new(float.NaN, float.NaN);
+    private float lastDockSpacing = float.NaN;
     private bool disposed;
     private DateTime nextConfigReloadCheckUtc = DateTime.MinValue;
     private bool loggedConfigReloadFailure;
@@ -37,7 +37,6 @@ internal sealed class GameplayHudHost
     public void Initialize()
     {
         BuildCanvasAndDock();
-        SetPostProcessingEnabled(false, save: false);
 
         for (int i = 0; i < modules.Count; i++)
         {
@@ -120,10 +119,6 @@ internal sealed class GameplayHudHost
             hudRig.SetActive(on);
         }
 
-        if (!on)
-        {
-            postProcessRig?.SetContentVisible(false);
-        }
     }
 
     private void UpdateDockLayout()
@@ -133,15 +128,36 @@ internal sealed class GameplayHudHost
             return;
         }
 
-        dockRoot.anchoredPosition = new Vector2(HudDockLayout.MarginLeft, HudDockLayout.MarginBottom);
-
-        var vlg = dockRoot.GetComponent<VerticalLayoutGroup>();
-        if (vlg != null)
+        var dockPosition = new Vector2(HudDockLayout.MarginLeft, HudDockLayout.MarginBottom);
+        bool layoutChanged = false;
+        if (dockRoot.anchoredPosition != dockPosition)
         {
-            vlg.spacing = HudDockLayout.ModuleStackSpacing;
+            dockRoot.anchoredPosition = dockPosition;
+            layoutChanged = true;
         }
 
-        LayoutRebuilder.MarkLayoutForRebuild(dockRoot);
+        if (dockPosition != lastDockPosition)
+        {
+            lastDockPosition = dockPosition;
+            layoutChanged = true;
+        }
+
+        if (dockLayoutGroup != null && !Mathf.Approximately(dockLayoutGroup.spacing, HudDockLayout.ModuleStackSpacing))
+        {
+            dockLayoutGroup.spacing = HudDockLayout.ModuleStackSpacing;
+            layoutChanged = true;
+        }
+
+        if (!Mathf.Approximately(lastDockSpacing, HudDockLayout.ModuleStackSpacing))
+        {
+            lastDockSpacing = HudDockLayout.ModuleStackSpacing;
+            layoutChanged = true;
+        }
+
+        if (layoutChanged)
+        {
+            LayoutRebuilder.MarkLayoutForRebuild(dockRoot);
+        }
     }
 
     private void BuildCanvasAndDock()
@@ -178,33 +194,6 @@ internal sealed class GameplayHudHost
         var ray = canvasRoot.AddComponent<GraphicRaycaster>();
         ray.blockingObjects = GraphicRaycaster.BlockingObjects.None;
 
-        postProcessRig = new HudPostProcessRig(hudRig.transform);
-        postProcessRig.Build(rootRt);
-
-        renderCanvasRoot = new GameObject(CanvasObjectName + "_Render");
-        renderCanvasRoot.transform.SetParent(hudRig.transform, false);
-        renderCanvasRoot.layer = HudDockLayout.HudRenderLayer;
-
-        var renderCanvas = renderCanvasRoot.AddComponent<Canvas>();
-        renderCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-        renderCanvas.worldCamera = postProcessRig.Camera;
-        renderCanvas.planeDistance = 1f;
-        renderCanvas.overrideSorting = true;
-        renderCanvas.sortingOrder = HudDockLayout.CanvasSortingOrder;
-        renderCanvas.pixelPerfect = false;
-
-        var renderRootRt = renderCanvasRoot.GetComponent<RectTransform>();
-        renderRootRt.anchorMin = Vector2.zero;
-        renderRootRt.anchorMax = Vector2.one;
-        renderRootRt.pivot = new Vector2(0.5f, 0.5f);
-        renderRootRt.offsetMin = Vector2.zero;
-        renderRootRt.offsetMax = Vector2.zero;
-
-        var renderScaler = renderCanvasRoot.AddComponent<CanvasScaler>();
-        renderScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        renderScaler.referenceResolution = new Vector2(1920f, 1080f);
-        renderScaler.matchWidthOrHeight = 0.5f;
-
         var dockGo = new GameObject(DockObjectName);
         dockGo.transform.SetParent(canvasRoot.transform, false);
         dockGo.layer = HudDockLayout.HudRenderLayer;
@@ -218,22 +207,22 @@ internal sealed class GameplayHudHost
         fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        var vlg = dockGo.AddComponent<VerticalLayoutGroup>();
-        vlg.childAlignment = TextAnchor.LowerLeft;
-        vlg.childControlWidth = false;
-        vlg.childControlHeight = false;
-        vlg.childForceExpandWidth = false;
-        vlg.childForceExpandHeight = false;
-        vlg.spacing = HudDockLayout.ModuleStackSpacing;
-        vlg.padding = new RectOffset(0, 0, 0, 0);
-        vlg.reverseArrangement = false;
+        dockLayoutGroup = dockGo.AddComponent<VerticalLayoutGroup>();
+        dockLayoutGroup.childAlignment = TextAnchor.LowerLeft;
+        dockLayoutGroup.childControlWidth = false;
+        dockLayoutGroup.childControlHeight = false;
+        dockLayoutGroup.childForceExpandWidth = false;
+        dockLayoutGroup.childForceExpandHeight = false;
+        dockLayoutGroup.spacing = HudDockLayout.ModuleStackSpacing;
+        dockLayoutGroup.padding = new RectOffset(0, 0, 0, 0);
+        dockLayoutGroup.reverseArrangement = false;
+        lastDockPosition = dockRoot.anchoredPosition;
+        lastDockSpacing = dockLayoutGroup.spacing;
     }
 
     public void Shutdown()
     {
         disposed = true;
-        postProcessRig?.Dispose();
-        postProcessRig = null;
 
         if (hudRig != null)
         {
@@ -243,67 +232,8 @@ internal sealed class GameplayHudHost
         }
 
         canvasRoot = null;
-        renderCanvasRoot = null;
         dockRoot = null;
-    }
-
-    private void SetPostProcessingEnabled(bool enabled, bool save)
-    {
-        try
-        {
-            postProcessEnabled = false;
-            postProcessRig?.SetEffectsEnabled(false);
-            ReparentDockForRenderMode();
-        }
-        catch (Exception ex)
-        {
-            hostMod.LoggerInstance.Warning("HUD RLPro mode update failed: " + ex);
-        }
-
-        if (save)
-        {
-        }
-    }
-
-    private void ReparentDockForRenderMode()
-    {
-        if (dockRoot == null)
-        {
-            return;
-        }
-
-        Transform target;
-        try
-        {
-            target = postProcessEnabled && renderCanvasRoot != null
-                ? renderCanvasRoot.transform
-                : canvasRoot != null
-                    ? canvasRoot.transform
-                    : null;
-            if (target == null || dockRoot.parent == target)
-            {
-                return;
-            }
-        }
-        catch
-        {
-            return;
-        }
-
-        try
-        {
-            Vector2 anchoredPosition = dockRoot.anchoredPosition;
-            Vector2 sizeDelta = dockRoot.sizeDelta;
-            dockRoot.SetParent(target, false);
-            dockRoot.anchorMin = new Vector2(0f, 0f);
-            dockRoot.anchorMax = new Vector2(0f, 0f);
-            dockRoot.pivot = new Vector2(0f, 0f);
-            dockRoot.anchoredPosition = anchoredPosition;
-            dockRoot.sizeDelta = sizeDelta;
-        }
-        catch
-        {
-        }
+        dockLayoutGroup = null;
     }
 
     private static RectTransform CreateModuleSlot(RectTransform dock, string objectName)

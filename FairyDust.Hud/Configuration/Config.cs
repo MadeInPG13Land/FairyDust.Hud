@@ -5,6 +5,7 @@ namespace FairyDust.Hud.Configuration;
 public static class Config
 {
     private static MelonLoader.Preferences.MelonPreferences_ReflectiveCategory category;
+    private static readonly HashSet<string> LoggedInvalidConfigEntries = new(StringComparer.OrdinalIgnoreCase);
 
     public static string FilePath { get; private set; } = string.Empty;
 
@@ -23,13 +24,13 @@ public static class Config
         category.LoadFromFile(false);
         category.DestroyFileWatcher();
 
-        Values = category.GetValue<ModConfiguration>() ?? new ModConfiguration();
-        ApplyFileOverrides();
+        Values = LoadValuesFromFile();
         lastLoadedWriteTimeUtc = GetConfigWriteTimeUtc();
 
         if (!fileExists)
         {
             Save();
+            Values = LoadValuesFromFile();
             lastLoadedWriteTimeUtc = GetConfigWriteTimeUtc();
         }
     }
@@ -48,19 +49,20 @@ public static class Config
             return false;
         }
 
-        ApplyFileOverrides();
+        ModConfiguration reloadedValues = LoadValuesFromFile();
+        Values = reloadedValues;
         lastLoadedWriteTimeUtc = writeTimeUtc;
         return true;
     }
 
-    public static string LoadedValuesSummary =>
-        $"Enabled={Values.Enabled}, "
-        + $"Stamina={Values.StaminaModuleEnabled}, "
-        + $"BleedOut={Values.BleedOutModuleEnabled}, "
-        + $"Infection={Values.InfectionModuleEnabled}, "
-        + $"Frostbite={Values.FrostbiteModuleEnabled}";
+    private static ModConfiguration LoadValuesFromFile()
+    {
+        var values = new ModConfiguration();
+        ApplyFileOverrides(values);
+        return values;
+    }
 
-    private static void ApplyFileOverrides()
+    private static void ApplyFileOverrides(ModConfiguration values)
     {
         if (!File.Exists(FilePath))
         {
@@ -68,12 +70,11 @@ public static class Config
         }
 
         Dictionary<string, string> entries = ReadSection(FilePath, Metadata.Name);
-        ApplyBool(entries, nameof(ModConfiguration.Enabled), value => Values.Enabled = value);
-        ApplyBool(entries, nameof(ModConfiguration.StaminaModuleEnabled), value => Values.StaminaModuleEnabled = value);
-        ApplyBool(entries, nameof(ModConfiguration.BleedOutModuleEnabled), value => Values.BleedOutModuleEnabled = value);
-        ApplyBool(entries, nameof(ModConfiguration.InfectionModuleEnabled), value => Values.InfectionModuleEnabled = value);
-        ApplyBool(entries, nameof(ModConfiguration.FrostbiteModuleEnabled), value => Values.FrostbiteModuleEnabled = value);
-        ApplyBool(entries, nameof(ModConfiguration.HudPostProcessingEnabled), value => Values.HudPostProcessingEnabled = value);
+        ApplyBool(entries, nameof(ModConfiguration.Enabled), value => values.Enabled = value);
+        ApplyBool(entries, nameof(ModConfiguration.StaminaModuleEnabled), value => values.StaminaModuleEnabled = value);
+        ApplyBool(entries, nameof(ModConfiguration.BleedOutModuleEnabled), value => values.BleedOutModuleEnabled = value);
+        ApplyBool(entries, nameof(ModConfiguration.InfectionModuleEnabled), value => values.InfectionModuleEnabled = value);
+        ApplyBool(entries, nameof(ModConfiguration.FrostbiteModuleEnabled), value => values.FrostbiteModuleEnabled = value);
     }
 
     private static Dictionary<string, string> ReadSection(string path, string sectionName)
@@ -117,9 +118,21 @@ public static class Config
 
     private static void ApplyBool(Dictionary<string, string> entries, string key, Action<bool> apply)
     {
-        if (entries.TryGetValue(key, out string rawValue) && bool.TryParse(rawValue, out bool value))
+        if (!entries.TryGetValue(key, out string rawValue))
+        {
+            return;
+        }
+
+        if (bool.TryParse(rawValue, out bool value))
         {
             apply(value);
+            return;
+        }
+
+        string warningKey = key + "=" + rawValue;
+        if (LoggedInvalidConfigEntries.Add(warningKey))
+        {
+            MelonLogger.Warning("[FairyDust.Hud] Ignoring invalid bool config value for " + key + ": " + rawValue);
         }
     }
 

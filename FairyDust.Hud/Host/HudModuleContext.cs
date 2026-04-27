@@ -1,7 +1,7 @@
 using MelonLoader;
 using UnityEngine;
 
-namespace FairyDust.Hud.Modules.Hud;
+namespace FairyDust.Hud.Host;
 
 /// <summary>Per-module attachment: layout slot under the shared dock and access to the Melon host.</summary>
 public sealed class HudModuleContext

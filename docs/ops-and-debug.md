@@ -11,7 +11,7 @@ It falls back to `AppContext.BaseDirectory\UserData` if MelonLoader path reflect
 ## Config
 
 - MelonPreferences file: `UserData\FairyDust.Hud.cfg`.
-- Toggles: `Enabled`, `StaminaModuleEnabled`, `BleedOutModuleEnabled`, `InfectionModuleEnabled`.
+- Toggles: `Enabled`, `StaminaModuleEnabled`, `BleedOutModuleEnabled`, `InfectionModuleEnabled`, `FrostbiteModuleEnabled`.
 - Config is for player-facing switches only; layout and visual tuning live in code.
 
 ## Build and deploy
@@ -25,5 +25,5 @@ It falls back to `AppContext.BaseDirectory\UserData` if MelonLoader path reflect
 ## Runtime notes
 
 - The HUD is created once by `GameplayHudHost` and hidden outside active gameplay scenes.
-- `HudPostProcessRig` is experimental: it renders the HUD through a dedicated camera and RLPro profile before displaying it as overlay UI.
-- If the RLPro path renders a black rectangle or invisible HUD in-game, inspect camera clear flags, render texture alpha, and the post-process profile first.
+- The normal runtime path is a Screen Space Overlay canvas.
+- RLPro/render-texture work is quarantined under `Experimental/RLPro` and is not wired into runtime.

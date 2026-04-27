@@ -1,6 +1,6 @@
 using UnityEngine.SceneManagement;
 
-namespace FairyDust.Hud.Modules.Hud;
+namespace FairyDust.Hud.Host;
 
 /// <summary>Tracks loaded scene name and exposes gameplay visibility from the active scene (not a stale cache).</summary>
 internal static class WorldSceneGate

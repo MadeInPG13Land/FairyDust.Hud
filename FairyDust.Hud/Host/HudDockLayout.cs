@@ -1,4 +1,4 @@
-namespace FairyDust.Hud.Modules.Hud;
+namespace FairyDust.Hud.Host;
 
 /// <summary>Fixed layout for the shared HUD dock (not user preferences).</summary>
 internal static class HudDockLayout

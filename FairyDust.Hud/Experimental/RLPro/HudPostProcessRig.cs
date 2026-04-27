@@ -1,7 +1,8 @@
+using FairyDust.Hud.Host;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace FairyDust.Hud.Modules.Hud;
+namespace FairyDust.Hud.Experimental.RLPro;
 
 /// <summary>Renders the HUD to a texture through a camera, then displays it as overlay UI.</summary>
 internal sealed class HudPostProcessRig

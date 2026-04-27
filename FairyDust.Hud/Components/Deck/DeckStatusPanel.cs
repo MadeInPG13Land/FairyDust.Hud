@@ -9,7 +9,7 @@ namespace FairyDust.Hud.Components.Deck;
 /// <summary>Compact Data Deck-style board with labeled horizontal status rows.</summary>
 internal static class DeckStatusPanel
 {
-    public const int RowCount = 4;
+    public const int DefaultRowCapacity = 4;
     public const float StrokePx = 2f;
     public const float PadPx = 7f;
     public const float RowHeightPx = 36f;
@@ -18,31 +18,26 @@ internal static class DeckStatusPanel
     public const float BarHeightPx = 13f;
     public const float ValueWidthPx = 68f;
     public const float LabelHeightPx = 21f;
-    public const float RowDividerInsetPx = 0f;
-    public const int DefaultPipCount = 3;
-    public const int StaminaPipCount = 7;
-    public const int MaxPipCount = StaminaPipCount;
-    public const float PipSpacingPx = 4f;
 
-    internal const bool UsePips = false;
     private static readonly Color PanelBackground = new(0f, 0f, 0f, 0.15f);
     internal static readonly Color TrackColor = new(0.02f, 0.02f, 0.02f, 0.06f);
     private static readonly Color EmptyValueColor = new(1f, 1f, 1f, 0f);
     private static Sprite whiteUnitSprite;
+    private static Texture2D whiteUnitTexture;
 
     public static Vector2 PreferredOuterSize =>
-        OuterSizeForRows(RowCount);
+        OuterSizeForRows(DefaultRowCapacity);
 
     public static Vector2 OuterSizeForRows(int visibleRowCount) =>
         new(
             StrokePx * 2f + PadPx * 2f + LabelWidthPx + BarWidthPx + ValueWidthPx,
-            StrokePx * 2f + PadPx * 2f + RowHeightPx * Mathf.Clamp(visibleRowCount, 1, RowCount));
+            StrokePx * 2f + PadPx * 2f + RowHeightPx * Mathf.Max(1, visibleRowCount));
 
-    public static DeckStatusPanelHandle Build(RectTransform slot, FFDataDeck deck, string rootName)
+    public static DeckStatusPanelHandle Build(RectTransform slot, FFDataDeck deck, string rootName, int rowCapacity)
     {
+        rowCapacity = Mathf.Max(1, rowCapacity);
         var tintedImages = new List<Image>();
         var tintedTexts = new List<TextMeshProUGUI>();
-        var dividers = new List<Image>();
         var root = CreateChild(rootName, slot);
         var rootRt = root.AddComponent<RectTransform>();
         rootRt.anchorMin = Vector2.zero;
@@ -57,16 +52,6 @@ internal static class DeckStatusPanel
         backgroundRt.offsetMin = new Vector2(StrokePx, StrokePx);
         backgroundRt.offsetMax = new Vector2(-StrokePx, -StrokePx);
 
-        // Temporarily hidden while evaluating a borderless status board treatment.
-        // AddLine(root.transform, deck, tintedImages, "BorderTop",
-        //     new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, StrokePx), Vector2.zero);
-        // AddLine(root.transform, deck, tintedImages, "BorderBottom",
-        //     new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, StrokePx), Vector2.zero);
-        // AddLine(root.transform, deck, tintedImages, "BorderLeft",
-        //     new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(StrokePx, 0f), Vector2.zero);
-        // AddLine(root.transform, deck, tintedImages, "BorderRight",
-        //     new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(StrokePx, 0f), Vector2.zero);
-
         var content = CreateChild("Content", root.transform);
         var contentRt = content.AddComponent<RectTransform>();
         contentRt.anchorMin = Vector2.zero;
@@ -74,23 +59,13 @@ internal static class DeckStatusPanel
         contentRt.offsetMin = new Vector2(StrokePx + PadPx, StrokePx + PadPx);
         contentRt.offsetMax = new Vector2(-(StrokePx + PadPx), -(StrokePx + PadPx));
 
-        var rows = new DeckStatusRow[RowCount];
-        for (int i = 0; i < RowCount; i++)
+        var rows = new DeckStatusRow[rowCapacity];
+        for (int i = 0; i < rowCapacity; i++)
         {
             rows[i] = BuildRow(contentRt, deck, tintedImages, tintedTexts, i);
         }
 
-        for (int i = 1; i < RowCount; i++)
-        {
-            float y = -RowHeightPx * i;
-            // Temporarily hidden while evaluating a borderless status board treatment.
-            // Image divider = AddLine(content.transform, deck, tintedImages, "Divider" + i,
-            //     new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
-            //     new Vector2(0f, StrokePx), new Vector2(0f, y + RowDividerInsetPx));
-            // dividers.Add(divider);
-        }
-
-        return new DeckStatusPanelHandle(root, rows, background, dividers.ToArray(), tintedImages.ToArray(), tintedTexts.ToArray());
+        return new DeckStatusPanelHandle(root, rows, background, tintedImages.ToArray(), tintedTexts.ToArray());
     }
 
     private static DeckStatusRow BuildRow(
@@ -154,21 +129,6 @@ internal static class DeckStatusPanel
             DeckTint.BindImage(fill, deck, false);
         }
         tintedImages.Add(fill);
-        track.gameObject.SetActive(!UsePips);
-
-        var pips = new Image[MaxPipCount];
-        for (int i = 0; i < pips.Length; i++)
-        {
-            Image pip = CreateImage("Pip" + i, barGo.transform, TrackColor);
-            var pipRt = pip.rectTransform;
-            pipRt.anchorMin = new Vector2(0f, 0.5f);
-            pipRt.anchorMax = new Vector2(0f, 0.5f);
-            pipRt.pivot = new Vector2(0f, 0.5f);
-            pipRt.anchoredPosition = new Vector2(i * (BarHeightPx + PipSpacingPx), 0f);
-            pipRt.sizeDelta = new Vector2(BarHeightPx, BarHeightPx);
-            pip.gameObject.SetActive(UsePips);
-            pips[i] = pip;
-        }
 
         var valueGo = CreateChild("Value", row.transform);
         var valueRt = valueGo.AddComponent<RectTransform>();
@@ -182,7 +142,7 @@ internal static class DeckStatusPanel
         value.color = EmptyValueColor;
         tintedTexts.Add(value);
 
-        return new DeckStatusRow(row, label, value, track, lowWarning, fill, fillRt, pips);
+        return new DeckStatusRow(row, label, value, track, lowWarning, fill, fillRt);
     }
 
     private static void SetupText(TextMeshProUGUI text, FFDataDeck deck, float targetHeight, bool rightAligned, bool bindTint = true)
@@ -200,33 +160,6 @@ internal static class DeckStatusPanel
         {
             DeckTint.BindText(text, deck, false);
         }
-    }
-
-    private static Image AddLine(
-        Transform parent,
-        FFDataDeck deck,
-        List<Image> tintedImages,
-        string name,
-        Vector2 anchorMin,
-        Vector2 anchorMax,
-        Vector2 pivot,
-        Vector2 sizeDelta,
-        Vector2 anchoredPosition)
-    {
-        var image = CreateImage(name, parent, Color.white);
-        var rt = image.rectTransform;
-        rt.anchorMin = anchorMin;
-        rt.anchorMax = anchorMax;
-        rt.pivot = pivot;
-        rt.anchoredPosition = anchoredPosition;
-        rt.sizeDelta = sizeDelta;
-        if (deck != null)
-        {
-            DeckTint.BindImage(image, deck, false);
-        }
-
-        tintedImages.Add(image);
-        return image;
     }
 
     private static Image CreateImage(string name, Transform parent, Color color)
@@ -254,11 +187,32 @@ internal static class DeckStatusPanel
             return whiteUnitSprite;
         }
 
-        var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
-        tex.SetPixel(0, 0, Color.white);
-        tex.Apply(false, true);
-        whiteUnitSprite = Sprite.Create(tex, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 100f);
+        whiteUnitTexture = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        whiteUnitTexture.SetPixel(0, 0, Color.white);
+        whiteUnitTexture.Apply(false, true);
+        whiteUnitSprite = Sprite.Create(whiteUnitTexture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 100f);
         return whiteUnitSprite;
+    }
+
+    public static void ReleaseSharedAssets()
+    {
+        try
+        {
+            if (whiteUnitSprite != null)
+            {
+                UnityEngine.Object.Destroy(whiteUnitSprite);
+                whiteUnitSprite = null;
+            }
+
+            if (whiteUnitTexture != null)
+            {
+                UnityEngine.Object.Destroy(whiteUnitTexture);
+                whiteUnitTexture = null;
+            }
+        }
+        catch
+        {
+        }
     }
 }
 
@@ -268,14 +222,12 @@ internal readonly struct DeckStatusPanelHandle
         GameObject root,
         DeckStatusRow[] rows,
         Image background,
-        Image[] dividers,
         Image[] tintedImages,
         TextMeshProUGUI[] tintedTexts)
     {
         Root = root;
         Rows = rows;
         Background = background;
-        Dividers = dividers;
         TintedImages = tintedImages;
         TintedTexts = tintedTexts;
     }
@@ -283,16 +235,15 @@ internal readonly struct DeckStatusPanelHandle
     public GameObject Root { get; }
     public DeckStatusRow[] Rows { get; }
     private Image Background { get; }
-    private Image[] Dividers { get; }
     private Image[] TintedImages { get; }
     private TextMeshProUGUI[] TintedTexts { get; }
-    public bool IsValid => Root != null && Rows != null && Rows.Length == DeckStatusPanel.RowCount;
+    public bool IsValid => Root != null && Rows != null && Rows.Length > 0;
 
     public void SetVisible(bool visible)
     {
         try
         {
-            if (Root != null)
+            if (Root != null && Root.activeSelf != visible)
             {
                 Root.SetActive(visible);
             }
@@ -324,10 +275,18 @@ internal readonly struct DeckStatusPanelHandle
         {
             if (Background != null)
             {
-                Background.enabled = alpha > 0.001f;
+                bool enabled = alpha > 0.001f;
+                if (Background.enabled != enabled)
+                {
+                    Background.enabled = enabled;
+                }
+
                 Color color = Background.color;
                 color.a = Mathf.Clamp01(alpha);
-                Background.color = color;
+                if (Background.color != color)
+                {
+                    Background.color = color;
+                }
             }
         }
         catch
@@ -344,10 +303,35 @@ internal readonly struct DeckStatusPanelHandle
 
         try
         {
-            Rows[index].SetVisible(visible);
+            if (Rows[index].IsVisible != visible)
+            {
+                Rows[index].SetVisible(visible);
+            }
         }
         catch
         {
+        }
+    }
+
+    public void ClearRows()
+    {
+        if (!IsValid)
+        {
+            return;
+        }
+
+        for (int i = 0; i < Rows.Length; i++)
+        {
+            try
+            {
+                if (Rows[i].IsVisible)
+                {
+                    Rows[i].SetVisible(false);
+                }
+            }
+            catch
+            {
+            }
         }
     }
 
@@ -386,31 +370,6 @@ internal readonly struct DeckStatusPanelHandle
             visibleIndex++;
         }
 
-        if (Dividers != null)
-        {
-            for (int i = 0; i < Dividers.Length; i++)
-            {
-                Image divider = Dividers[i];
-                if (divider == null)
-                {
-                    continue;
-                }
-
-                bool visible = i < visibleIndex - 1;
-                try
-                {
-                    divider.gameObject.SetActive(visible);
-                    if (visible)
-                    {
-                        divider.rectTransform.anchoredPosition = new Vector2(0f, -DeckStatusPanel.RowHeightPx * (i + 1) + DeckStatusPanel.RowDividerInsetPx);
-                    }
-                }
-                catch
-                {
-                }
-            }
-        }
-
         return Mathf.Max(1, visibleIndex);
     }
 
@@ -436,7 +395,9 @@ internal readonly struct DeckStatusPanelHandle
                     if (refreshTextStyle)
                     {
                         DeckTextStyle.Apply(text, deck, DeckStatusPanel.LabelHeightPx);
-                        text.alignment = TextAlignmentOptions.MidlineLeft;
+                        text.alignment = string.Equals(text.gameObject.name, "Value", StringComparison.Ordinal)
+                            ? TextAlignmentOptions.MidlineRight
+                            : TextAlignmentOptions.MidlineLeft;
                     }
 
                     text.color = flavor;
@@ -456,7 +417,10 @@ internal readonly struct DeckStatusPanelHandle
                 {
                     if (image != null)
                     {
-                        image.color = flavor;
+                        if (image.color != flavor)
+                        {
+                            image.color = flavor;
+                        }
                     }
                 }
                 catch
@@ -492,7 +456,6 @@ internal readonly struct DeckStatusRow
     private readonly Image lowWarning;
     private readonly Image fill;
     private readonly RectTransform fillRect;
-    private readonly Image[] pips;
     private readonly RectTransform rootRect;
 
     public DeckStatusRow(
@@ -502,8 +465,7 @@ internal readonly struct DeckStatusRow
         Image track,
         Image lowWarning,
         Image fill,
-        RectTransform fillRect,
-        Image[] pips)
+        RectTransform fillRect)
     {
         this.root = root;
         rootRect = root != null ? root.GetComponent<RectTransform>() : null;
@@ -513,7 +475,6 @@ internal readonly struct DeckStatusRow
         this.lowWarning = lowWarning;
         this.fill = fill;
         this.fillRect = fillRect;
-        this.pips = pips;
     }
 
     public bool IsVisible
@@ -535,7 +496,7 @@ internal readonly struct DeckStatusRow
     {
         try
         {
-            if (root != null)
+            if (root != null && root.activeSelf != visible)
             {
                 root.SetActive(visible);
             }
@@ -563,23 +524,40 @@ internal readonly struct DeckStatusRow
     {
         if (root != null)
         {
-            root.SetActive(true);
+            if (!root.activeSelf)
+            {
+                root.SetActive(true);
+            }
         }
 
         if (label != null)
         {
-            label.text = labelText ?? string.Empty;
+            string nextLabel = labelText ?? string.Empty;
+            if (!string.Equals(label.text, nextLabel, StringComparison.Ordinal))
+            {
+                label.text = nextLabel;
+            }
         }
 
         if (track != null)
         {
-            track.color = DeckStatusPanel.TrackColor;
-            track.gameObject.SetActive(!DeckStatusPanel.UsePips);
+            if (track.color != DeckStatusPanel.TrackColor)
+            {
+                track.color = DeckStatusPanel.TrackColor;
+            }
+
+            if (!track.gameObject.activeSelf)
+            {
+                track.gameObject.SetActive(true);
+            }
         }
 
         if (lowWarning != null)
         {
-            lowWarning.gameObject.SetActive(false);
+            if (lowWarning.gameObject.activeSelf)
+            {
+                lowWarning.gameObject.SetActive(false);
+            }
         }
 
         if (fill != null)
@@ -590,14 +568,24 @@ internal readonly struct DeckStatusRow
                 float wave = (Mathf.Sin(Time.unscaledTime * 4.5f) + 1f) * 0.5f;
                 Color pulseColor = Color.Lerp(baseColor, Color.black, 0.65f);
                 pulseColor.a = Mathf.Clamp01(baseColor.a * 0.28f);
-                fill.color = Color.Lerp(baseColor, pulseColor, Mathf.Lerp(0.15f, 0.9f, wave));
+                Color nextFillColor = Color.Lerp(baseColor, pulseColor, Mathf.Lerp(0.15f, 0.9f, wave));
+                if (fill.color != nextFillColor)
+                {
+                    fill.color = nextFillColor;
+                }
             }
             else
             {
-                fill.color = baseColor;
+                if (fill.color != baseColor)
+                {
+                    fill.color = baseColor;
+                }
             }
 
-            fill.gameObject.SetActive(!DeckStatusPanel.UsePips);
+            if (!fill.gameObject.activeSelf)
+            {
+                fill.gameObject.SetActive(true);
+            }
         }
 
         if (fillRect != null)
@@ -606,66 +594,22 @@ internal readonly struct DeckStatusRow
             fillRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width < 0.5f ? 0f : width);
         }
 
-        UpdatePips(labelText, ratio, showLowWarning);
-
         if (value != null)
         {
             bool hasValue = !string.IsNullOrEmpty(valueText);
-            value.text = hasValue ? valueText : string.Empty;
+            string nextValue = hasValue ? valueText : string.Empty;
+            if (!string.Equals(value.text, nextValue, StringComparison.Ordinal))
+            {
+                value.text = nextValue;
+            }
+
             Color baseColor = label != null ? label.color : Color.white;
-            value.color = hasValue ? baseColor : new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
-        }
-    }
-
-    public void RefreshFillFromLabel()
-    {
-        if (fill != null)
-        {
-            fill.color = label != null ? label.color : Color.white;
-        }
-    }
-
-    private void UpdatePips(string labelText, float ratio, bool showLowWarning)
-    {
-        if (!DeckStatusPanel.UsePips || pips == null)
-        {
-            return;
-        }
-
-        int pipCount = IsStamina(labelText) ? DeckStatusPanel.StaminaPipCount : DeckStatusPanel.DefaultPipCount;
-        int filledCount = Mathf.CeilToInt(Mathf.Clamp01(ratio) * pipCount);
-        Color baseColor = label != null ? label.color : Color.white;
-        Color warningColor = baseColor;
-        if (showLowWarning)
-        {
-            float wave = (Mathf.Sin(Time.unscaledTime * 4.5f) + 1f) * 0.5f;
-            Color pulseColor = Color.Lerp(baseColor, Color.black, 0.65f);
-            pulseColor.a = Mathf.Clamp01(baseColor.a * 0.28f);
-            warningColor = Color.Lerp(baseColor, pulseColor, Mathf.Lerp(0.15f, 0.9f, wave));
-        }
-
-        for (int i = 0; i < pips.Length; i++)
-        {
-            Image pip = pips[i];
-            if (pip == null)
+            Color nextValueColor = hasValue ? baseColor : new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
+            if (value.color != nextValueColor)
             {
-                continue;
-            }
-
-            bool visible = i < pipCount;
-            pip.gameObject.SetActive(visible);
-            if (visible)
-            {
-                bool isLastFilledPip = showLowWarning && filledCount > 0 && i == filledCount - 1;
-                pip.color = i < filledCount
-                    ? isLastFilledPip
-                        ? warningColor
-                        : baseColor
-                    : DeckStatusPanel.TrackColor;
+                value.color = nextValueColor;
             }
         }
     }
 
-    private static bool IsStamina(string labelText) =>
-        string.Equals(labelText, "STAMINA", StringComparison.OrdinalIgnoreCase);
 }

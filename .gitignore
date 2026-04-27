@@ -1,4 +1,5 @@
 bin/
 obj/
 Local.Build.props
+artifacts/
 

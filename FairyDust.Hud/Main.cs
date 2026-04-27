@@ -1,5 +1,6 @@
 using FairyDust.Hud.Configuration;
-using FairyDust.Hud.Modules.Hud;
+using FairyDust.Hud.Components.Deck;
+using FairyDust.Hud.Host;
 using FairyDust.Hud.Modules.Status;
 using MelonLoader;
 
@@ -16,17 +17,29 @@ public sealed class Main : MelonMod
         if (activeInstance != null && activeInstance != this)
         {
             activeInstance.hudHost?.Shutdown();
+            activeInstance.hudHost = null;
         }
 
         activeInstance = this;
         Config.Initialize();
 
         hudHost = new GameplayHudHost(this);
-        hudHost.Register(new StatusHudModule());
+        hudHost.Register(new StatusBoardModule());
         hudHost.Initialize();
 
-        LoggerInstance.Msg($"{Metadata.Name} v{Metadata.Version} - {Config.FilePath}");
-        LoggerInstance.Msg("HUD config loaded: " + Config.LoadedValuesSummary);
+        LoggerInstance.Msg(ConfigConsoleCard.Build());
+    }
+
+    public override void OnDeinitializeMelon()
+    {
+        hudHost?.Shutdown();
+        hudHost = null;
+        DeckStatusPanel.ReleaseSharedAssets();
+
+        if (activeInstance == this)
+        {
+            activeInstance = null;
+        }
     }
 
     public override void OnSceneWasLoaded(int buildIndex, string sceneName) =>

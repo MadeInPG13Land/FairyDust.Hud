@@ -5,6 +5,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Experimental\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="0Harmony">
       <HintPath>$(MelonLoaderNet6Dir)\0Harmony.dll</HintPath>
       <Private>false</Private>
@@ -69,10 +73,6 @@
       <HintPath>$(Il2CppAssembliesDir)\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Unity.Postprocessing.Runtime">
-      <HintPath>$(Il2CppAssembliesDir)\Unity.Postprocessing.Runtime.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
   </ItemGroup>
 
   <Target Name="ValidateLocalReferences" BeforeTargets="ResolveReferences">
@@ -81,7 +81,7 @@
   </Target>
 
   <!-- Copy mod DLL into the game’s Mods folder on every `dotnet build` (runs after Build so incremental builds still deploy). -->
-  <Target Name="CopyToGameModsFolder" AfterTargets="Build">
+  <Target Name="CopyToGameModsFolder" AfterTargets="Build" Condition="'$(SkipGameDeploy)' != 'true'">
     <PropertyGroup>
       <_GameRoot>$(GameRootDir)</_GameRoot>
       <_GameRoot Condition="'$(_GameRoot)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Forsaken Frontiers</_GameRoot>

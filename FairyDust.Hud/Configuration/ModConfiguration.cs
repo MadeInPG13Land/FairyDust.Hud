@@ -9,6 +9,4 @@ public sealed class ModConfiguration
     public bool BleedOutModuleEnabled = true;
     public bool InfectionModuleEnabled = true;
     public bool FrostbiteModuleEnabled = true;
-
-    public bool HudPostProcessingEnabled = false;
 }
