@@ -26,4 +26,10 @@ It falls back to `AppContext.BaseDirectory\UserData` if MelonLoader path reflect
 
 - The HUD is created once by `GameplayHudHost` and hidden outside active gameplay scenes.
 - The normal runtime path is a Screen Space Overlay canvas.
+- The HUD is hidden while the Data Deck is open, and while the local player's Data Deck Crosshair setting is off.
+- The Bleed row only represents a lethal bleed-out countdown; Exploration mode and non-countdown bleeding states are hidden.
 - RLPro/render-texture work is quarantined under `Experimental/RLPro` and is not wired into runtime.
+
+## Future mod menu
+
+A shared in-game FairyDust mod menu should be a separate mod-level project, such as `FairyDust.ModMenu`, with a small registration API that other FairyDust mods can hook into. `FairyDust.Hud` should not grow that framework directly.

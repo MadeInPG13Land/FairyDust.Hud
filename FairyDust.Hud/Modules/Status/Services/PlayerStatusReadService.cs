@@ -5,6 +5,9 @@ namespace FairyDust.Hud.Modules.Status.Services;
 
 internal sealed class PlayerStatusReadService
 {
+    private const float MinimumMeaningfulTimer = 0.01f;
+    private const float TimerUpperBoundTolerance = 1f;
+
     public bool IsUsable(FFPlayer player)
     {
         if (player == null)
@@ -56,6 +59,30 @@ internal sealed class PlayerStatusReadService
         {
             return false;
         }
+    }
+
+    public bool HasActiveBleedOut(FFPlayer player, out float timer, out float total)
+    {
+        timer = 0f;
+        total = 0f;
+        if (!IsBleeding(player))
+        {
+            return false;
+        }
+
+        total = BleedToDeathTime(player);
+        timer = BleedToDeathTimer(player);
+        if (total <= MinimumMeaningfulTimer || timer <= MinimumMeaningfulTimer)
+        {
+            return false;
+        }
+
+        if (timer > total + TimerUpperBoundTolerance)
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public bool IsInfected(FFPlayer player)
@@ -163,6 +190,30 @@ internal sealed class PlayerStatusReadService
         catch
         {
             return 0f;
+        }
+    }
+
+    public bool NearWarmth(FFPlayer player)
+    {
+        try
+        {
+            return player != null && player.NearWarmth;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public bool HasWarmthBenefits(FFPlayer player)
+    {
+        try
+        {
+            return player != null && player.HasWarmthBenefits;
+        }
+        catch
+        {
+            return false;
         }
     }
 

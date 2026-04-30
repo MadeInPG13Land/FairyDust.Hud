@@ -86,7 +86,7 @@ On startup, the unit prints a compact status card to the MelonLoader console:
 +----------------------------------------------------------+
 |                      FairyDust.Hud                       |
 +----------------------------------------------------------+
-|  Version   1.0.0                                         |
+|  Version   1.0.1                                         |
 |  File      UserData\FairyDust.Hud.cfg                    |
 +----------------------------------------------------------+
 |  Status Modules                                          |

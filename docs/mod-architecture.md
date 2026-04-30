@@ -15,6 +15,8 @@
 
 Custom bars are not parented under `FFDataDeck._canvas`. They match deck styling by copying TMP style and sampling the live deck flavor color.
 
+The HUD also follows the local Data Deck Crosshair setting as the first-pass user-facing visibility toggle. Crosshair off means the whole FairyDust HUD is hidden until Crosshair is enabled again.
+
 ## Component map
 
 | Piece | Role |
@@ -24,7 +26,10 @@ Custom bars are not parented under `FFDataDeck._canvas`. They match deck styling
 | `DeckTint` | Applies resolved deck flavor colors to images/text. |
 | `StatusBoardModule` | Owns board lifecycle and updates the shared panel. |
 | Status submodules | `Stamina`, `Bleed`, `Infection`, and `Frostbite` each produce one optional row. |
+| Crosshair visibility patches | Track the Data Deck Crosshair toggle and hide the shared status board when it is disabled. |
 | `Experimental/RLPro` | Quarantined render-texture experiment, not part of the normal runtime path. |
+
+See [modular-structure.md](modular-structure.md) for the module/service/entity boundaries used by status submodules.
 
 ## Rebuild rules
 
