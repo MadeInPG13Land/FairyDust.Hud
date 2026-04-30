@@ -1,5 +1,6 @@
 using FairyDust.Hud.Configuration;
 using FairyDust.Hud.Components.Deck;
+using FairyDust.Hud.Game.Services;
 using FairyDust.Hud.Host;
 using FairyDust.Hud.Modules.Status;
 using MelonLoader;
@@ -22,6 +23,7 @@ public sealed class Main : MelonMod
 
         activeInstance = this;
         Config.Initialize();
+        HarmonyInstance.PatchAll(typeof(Main).Assembly);
 
         hudHost = new GameplayHudHost(this);
         hudHost.Register(new StatusBoardModule());
@@ -34,6 +36,9 @@ public sealed class Main : MelonMod
     {
         hudHost?.Shutdown();
         hudHost = null;
+        DataDeckFlavorService.Clear();
+        CrosshairHudVisibilityService.Reset();
+        PlayerHudStateService.Reset();
         DeckStatusPanel.ReleaseSharedAssets();
 
         if (activeInstance == this)
@@ -42,8 +47,12 @@ public sealed class Main : MelonMod
         }
     }
 
-    public override void OnSceneWasLoaded(int buildIndex, string sceneName) =>
+    public override void OnSceneWasLoaded(int buildIndex, string sceneName)
+    {
+        DataDeckFlavorService.Clear();
+        PlayerHudStateService.Reset();
         hudHost?.OnSceneWasLoaded(buildIndex, sceneName);
+    }
 
     public override void OnLateUpdate()
     {

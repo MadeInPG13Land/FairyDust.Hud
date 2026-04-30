@@ -1,3 +1,4 @@
+using FairyDust.Hud.Game.Services;
 using Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.datadeck;
 using Il2CppTMPro;
 using UnityEngine;
@@ -57,6 +58,11 @@ internal static class DeckTextStyle
 
     public static Color ResolveDeckColor(FFDataDeck deck, Color fallback)
     {
+        if (DataDeckFlavorService.TryReadFlavorColor(deck, out Color flavorColor))
+        {
+            return flavorColor;
+        }
+
         TextMeshProUGUI src = TryGetStyleSource(deck);
         if (src == null)
         {
@@ -76,6 +82,11 @@ internal static class DeckTextStyle
     public static bool TryResolveDeckColor(FFDataDeck deck, out Color color)
     {
         color = default;
+        if (DataDeckFlavorService.TryReadFlavorColor(deck, out color))
+        {
+            return true;
+        }
+
         TextMeshProUGUI src = TryGetStyleSource(deck);
         if (src == null)
         {

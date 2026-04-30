@@ -26,14 +26,11 @@ internal sealed class BleedStatusProvider : IStatusProvider
     public bool TryGetRow(StatusProviderContext context, out StatusRowSnapshot row)
     {
         row = default;
-        bool bleeding = reads.IsBleeding(context.Player);
-        if (!bleeding)
+        if (!reads.HasActiveBleedOut(context.Player, out float timer, out float total))
         {
             return false;
         }
 
-        float total = Mathf.Max(reads.BleedToDeathTime(context.Player), 1e-5f);
-        float timer = Mathf.Max(0f, reads.BleedToDeathTimer(context.Player));
         float ratio = Mathf.Clamp01(timer / total);
         row = new StatusRowSnapshot(
             StatusRowKind.Bleed,

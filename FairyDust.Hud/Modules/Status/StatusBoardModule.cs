@@ -1,4 +1,5 @@
 using FairyDust.Hud.Components.Deck;
+using FairyDust.Hud.Configuration;
 using FairyDust.Hud.Game.Services;
 using FairyDust.Hud.Host;
 using FairyDust.Hud.Modules.Status.Bleed;
@@ -16,9 +17,13 @@ namespace FairyDust.Hud.Modules.Status;
 internal sealed class StatusBoardModule : IHudModule
 {
     private static readonly TimeSpan TextStyleRefreshInterval = TimeSpan.FromSeconds(1);
-    private const float NormalBackgroundAlpha = 0.15f;
+    private const float NormalBackgroundAlpha = 0f;
+    private const float MinimumMeaningfulTimer = 0.01f;
+    private const float TimerUpperBoundTolerance = 1f;
+    private const float LowWarningRatio = 0.25f;
 
     private readonly PlayerStatusReadService reads;
+    private readonly StatusFormatterService formatter;
     private readonly StatusBoardService board;
     private readonly StatusVisibilityService visibility;
     private readonly List<StatusRowSnapshot> rowBuffer;
@@ -33,7 +38,7 @@ internal sealed class StatusBoardModule : IHudModule
     public StatusBoardModule()
     {
         reads = new PlayerStatusReadService();
-        var formatter = new StatusFormatterService(reads);
+        formatter = new StatusFormatterService(reads);
         board = new StatusBoardService(new IStatusProvider[]
         {
             new BleedStatusModule().CreateProvider(reads, formatter),
@@ -68,7 +73,15 @@ internal sealed class StatusBoardModule : IHudModule
                 return;
             }
 
-            board.CollectRows(new StatusProviderContext(player, deck), rowBuffer);
+            if (PlayerHudStateService.IsCurrentPlayerIncapacitated)
+            {
+                CollectDownedRows(player, rowBuffer);
+            }
+            else
+            {
+                board.CollectRows(new StatusProviderContext(player, deck), rowBuffer);
+            }
+
             if (rowBuffer.Count == 0)
             {
                 SafeSetVisible(false);
@@ -121,6 +134,163 @@ internal sealed class StatusBoardModule : IHudModule
             StatusRowSnapshot row = rows[i];
             panel.SetRow(i, row.Label, row.Ratio, row.ValueText, row.Warning);
         }
+    }
+
+    private void CollectDownedRows(Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.FFPlayer player, List<StatusRowSnapshot> rows)
+    {
+        rows.Clear();
+        if (TryGetMostUrgentDownedRow(player, out StatusRowSnapshot row))
+        {
+            rows.Add(row);
+        }
+    }
+
+    private bool TryGetMostUrgentDownedRow(
+        Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.FFPlayer player,
+        out StatusRowSnapshot row)
+    {
+        row = default;
+        bool hasCandidate = false;
+        float bestSeconds = float.MaxValue;
+        StatusRowSnapshot bestRow = default;
+
+        ConsiderBleed(player, ref hasCandidate, ref bestSeconds, ref bestRow);
+        ConsiderInfection(player, ref hasCandidate, ref bestSeconds, ref bestRow);
+        ConsiderFrostbite(player, ref hasCandidate, ref bestSeconds, ref bestRow);
+
+        if (!hasCandidate)
+        {
+            return false;
+        }
+
+        row = bestRow;
+        return true;
+    }
+
+    private void ConsiderBleed(
+        Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.FFPlayer player,
+        ref bool hasCandidate,
+        ref float bestSeconds,
+        ref StatusRowSnapshot bestRow)
+    {
+        if (!Config.Values.BleedOutModuleEnabled || !reads.HasActiveBleedOut(player, out float timer, out float total))
+        {
+            return;
+        }
+
+        ConsiderCandidate(
+            StatusRowKind.Bleed,
+            "bleed",
+            "BLEED",
+            timer,
+            Mathf.Clamp01(timer / Mathf.Max(total, MinimumMeaningfulTimer)),
+            total,
+            ref hasCandidate,
+            ref bestSeconds,
+            ref bestRow);
+    }
+
+    private void ConsiderInfection(
+        Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.FFPlayer player,
+        ref bool hasCandidate,
+        ref float bestSeconds,
+        ref StatusRowSnapshot bestRow)
+    {
+        if (!Config.Values.InfectionModuleEnabled || !reads.IsInfected(player))
+        {
+            return;
+        }
+
+        float total = reads.InfectionTakeoverDuration(player);
+        float timer = reads.InfectionTimer(player);
+        if (!IsMeaningfulCountdown(timer, total))
+        {
+            return;
+        }
+
+        ConsiderCandidate(
+            StatusRowKind.Infection,
+            "infection",
+            "INFECTION",
+            timer,
+            Mathf.Clamp01(timer / total),
+            total,
+            ref hasCandidate,
+            ref bestSeconds,
+            ref bestRow);
+    }
+
+    private void ConsiderFrostbite(
+        Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.FFPlayer player,
+        ref bool hasCandidate,
+        ref float bestSeconds,
+        ref StatusRowSnapshot bestRow)
+    {
+        if (!Config.Values.FrostbiteModuleEnabled)
+        {
+            return;
+        }
+
+        float max = Mathf.Max(reads.MaxFrostbite(player), MinimumMeaningfulTimer);
+        float current = Mathf.Clamp(reads.Frostbite(player), 0f, max);
+        float speed = reads.FrostbiteSpeed(player);
+        bool active = reads.IsFrostbiteActive(player);
+        if (!active
+            || reads.NearWarmth(player)
+            || reads.HasWarmthBenefits(player)
+            || speed <= MinimumMeaningfulTimer
+            || current <= MinimumMeaningfulTimer
+            || current >= max)
+        {
+            return;
+        }
+
+        float timer = (max - current) / speed;
+        ConsiderCandidate(
+            StatusRowKind.Frostbite,
+            "frostbite",
+            "FROSTBITE",
+            timer,
+            Mathf.Clamp01(current / max),
+            max / speed,
+            ref hasCandidate,
+            ref bestSeconds,
+            ref bestRow);
+    }
+
+    private void ConsiderCandidate(
+        StatusRowKind kind,
+        string id,
+        string label,
+        float seconds,
+        float ratio,
+        float totalSeconds,
+        ref bool hasCandidate,
+        ref float bestSeconds,
+        ref StatusRowSnapshot bestRow)
+    {
+        if (seconds <= MinimumMeaningfulTimer || seconds >= bestSeconds)
+        {
+            return;
+        }
+
+        hasCandidate = true;
+        bestSeconds = seconds;
+        bestRow = new StatusRowSnapshot(
+            kind,
+            id,
+            label,
+            ratio,
+            -100,
+            formatter.Timer(seconds),
+            totalSeconds > MinimumMeaningfulTimer && seconds / totalSeconds <= LowWarningRatio);
+    }
+
+    private static bool IsMeaningfulCountdown(float timer, float total)
+    {
+        return total > MinimumMeaningfulTimer
+            && timer > MinimumMeaningfulTimer
+            && timer <= total + TimerUpperBoundTolerance;
     }
 
     private void ApplySlotSize(int visibleRowCount)

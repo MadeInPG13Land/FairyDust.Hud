@@ -1,3 +1,4 @@
+using FairyDust.Hud.Game.Services;
 using FairyDust.Hud.Modules.Status.Entities;
 using Il2Cppmadeinfairyland.forsakenfrontiers.actor.player;
 using Il2Cppmadeinfairyland.forsakenfrontiers.actor.player.datadeck;
@@ -15,7 +16,9 @@ internal sealed class StatusVisibilityService
 
     public bool ShouldShowBoard(FFPlayer player, FFDataDeck deck, IReadOnlyList<IStatusProvider> providers)
     {
-        if (!reads.IsUsable(player) || reads.IsDataDeckOpen(deck))
+        if (!reads.IsUsable(player)
+            || reads.IsDataDeckOpen(deck)
+            || !CrosshairHudVisibilityService.CrosshairEnabled)
         {
             return false;
         }
